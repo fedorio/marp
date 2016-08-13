@@ -34,17 +34,25 @@ class EditorStates
       { label: '&Paste', accelerator: 'CmdOrCtrl+V', role: 'paste' }
       { label: '&Delete', role: 'delete' }
       { label: 'Select &All', accelerator: 'CmdOrCtrl+A', click: (i, w) => @codeMirror.execCommand 'selectAll' if w and !w.mdsWindow.freeze }
+      { type: 'separator' }
+      { label: 'Pre&vious Slide', accelerator: 'CmdOrCtrl+PageUp', click: (i, w) => @navigateSlide(i, w, false) }
+      { label: '&Next Slide', accelerator: 'CmdOrCtrl+PageDown', click: (i, w) => @navigateSlide(i, w, true) }
       { type: 'separator', platform: 'darwin' }
       { label: 'Services', role: 'services', submenu: [], platform: 'darwin' }
     ]
 
-  refreshPage: (rulers) =>
+  getCurrentPage: (rulers) =>
     @rulers = rulers if rulers?
     page    = 1
 
     lineNumber = @codeMirror.getCursor().line || 0
     for rulerLine in @rulers
       page++ if rulerLine <= lineNumber
+
+    page
+
+  refreshPage: (rulers) =>
+    page = @getCurrentPage rulers
 
     if @currentPage != page
       @currentPage = page
@@ -128,6 +136,19 @@ class EditorStates
         "<!-- #{prop}: #{value} -->\n\n",
         CodeMirror.Pos(@codeMirror.firstLine(), 0)
       )
+
+  navigateSlide: (i, w, forward) =>
+    page = @getCurrentPage()
+    return if page == 1 and not forward # can't go "previous from page 1"
+
+    idx = if forward then page - 1 else page - 3
+    idx = if idx > @rulers.length then @rulers.length else idx # prevent overflow
+    editorLine = if idx >= 0 then @rulers[idx] else 0  # prevent underflow
+    console.log "Page #{page}, idx #{idx}, editor line #{editorLine}", @rulers
+
+    @codeMirror.setCursor
+      line: editorLine
+      ch: 0
 
 loadingState = 'loading'
 
