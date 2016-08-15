@@ -35,8 +35,8 @@ class EditorStates
       { label: '&Delete', role: 'delete' }
       { label: 'Select &All', accelerator: 'CmdOrCtrl+A', click: (i, w) => @codeMirror.execCommand 'selectAll' if w and !w.mdsWindow.freeze }
       { type: 'separator' }
-      { label: 'Pre&vious Slide', accelerator: 'CmdOrCtrl+PageUp', click: (i, w) => @navigateSlide(i, w, false) }
-      { label: '&Next Slide', accelerator: 'CmdOrCtrl+PageDown', click: (i, w) => @navigateSlide(i, w, true) }
+      { label: 'Pre&vious Slide', accelerator: 'Shift+CmdOrCtrl+[', click: (i, w) => @navigateSlide(i, w, false) }
+      { label: '&Next Slide', accelerator: 'Shift+CmdOrCtrl+]', click: (i, w) => @navigateSlide(i, w, true) }
       { type: 'separator', platform: 'darwin' }
       { label: 'Services', role: 'services', submenu: [], platform: 'darwin' }
     ]
@@ -142,9 +142,8 @@ class EditorStates
     return if page == 1 and not forward # can't go "previous from page 1"
 
     idx = if forward then page - 1 else page - 3
-    idx = if idx > @rulers.length then @rulers.length else idx # prevent overflow
+    idx = if idx >= @rulers.length then @rulers.length - 1 else idx # prevent overflow
     editorLine = if idx >= 0 then @rulers[idx] else 0  # prevent underflow
-    console.log "Page #{page}, idx #{idx}, editor line #{editorLine}", @rulers
 
     @codeMirror.setCursor
       line: editorLine
@@ -272,6 +271,8 @@ do ->
         .filter("[data-viewmode='#{mode}']").addClass('active')
 
     .on 'editCommand', (command) -> editorStates.codeMirror.execCommand(command)
+
+    .on 'jumpSlide', (forwards) -> editorStates.navigateSlide {}, {}, forwards
 
     .on 'openDevTool', ->
       if editorStates.preview.isDevToolsOpened()
